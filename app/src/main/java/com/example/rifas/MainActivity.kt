@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,14 +97,21 @@ fun MainScreen(activity: Activity) {
         }
     }
 }
+
 @Composable
 fun RifaListScreen(onRifaClick: (Int) -> Unit) {
     val context = LocalContext.current
     val db = remember { DataBase(context, "rifasDB", null, 1) }
     val rifas = remember { mutableStateListOf<Rifa>() }
+    var textoBusqueda by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
-        val cursor = db.obtenerTodasLasRifas()
+    fun buscar() {
+        val cursor = if (textoBusqueda.isEmpty()) {
+            db.obtenerTodasLasRifas()
+        } else {
+            db.buscarRifasPorNombre(textoBusqueda)
+        }
+
         val lista = mutableListOf<Rifa>()
         while (cursor.moveToNext()) {
             val id = cursor.getInt(0)
@@ -118,7 +126,22 @@ fun RifaListScreen(onRifaClick: (Int) -> Unit) {
         rifas.addAll(lista)
     }
 
+    LaunchedEffect(Unit) {
+        buscar()
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        TextField(
+            value = textoBusqueda,
+            onValueChange = {
+                textoBusqueda = it
+                buscar()
+            },
+            label = { Text("Buscar rifa por nombre") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
         Text("Lista de Rifas", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
         if (rifas.isEmpty()) {
@@ -135,14 +158,14 @@ fun RifaListScreen(onRifaClick: (Int) -> Unit) {
 }
 
 
+
 @Composable
 fun RifaItem(rifa: Rifa, onClick: () -> Unit) {
     val context = LocalContext.current
     val db = remember { DataBase(context, "rifasDB", null, 1) }
     val inscritos = db.contarInscritos(rifa.matriz)
-
-    // Obtener el ganador de la base de datos
     val ganador = db.obtenerNumeroGanadorPorId(rifa.id)
+    val activity = (context as? Activity)
 
     Column(
         modifier = Modifier
@@ -153,15 +176,23 @@ fun RifaItem(rifa: Rifa, onClick: () -> Unit) {
         Text(text = rifa.nombre, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Text(text = "Inscritos: $inscritos")
         Text(text = "Fecha: ${rifa.fecha}")
-
-        // Verificar si el ganador no es null o vacío antes de mostrarlo
         if (ganador != -1) {
             Text(text = "🎉 Ganador: $ganador", fontWeight = FontWeight.Bold)
-        } else {
-            Text(text = "🎉 No hay ganador aún.", fontWeight = FontWeight.Bold)
+        }else{
+            Text(text = "No hay ganador", fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(onClick = {
+            db.eliminarRifaPorId(rifa.id)
+            activity?.recreate()  // Para recargar la lista
+        }) {
+            Text("Eliminar")
         }
     }
 }
+
 
 
 

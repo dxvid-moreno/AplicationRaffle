@@ -121,4 +121,19 @@ public class DataBase extends SQLiteOpenHelper {
         cursor.close();
         return null;  // Si no se encuentra el nombre, devuelve null
     }
+
+    public Cursor buscarRifasPorNombre(String nombreBuscado) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.rawQuery("SELECT id, nombre, inscritos, fecha, matriz FROM rifas WHERE nombre LIKE ?",
+                new String[]{"%" + nombreBuscado + "%"});
+    }
+
+    public void eliminarRifaPorId(int id) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete("rifas", "id = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+
+
 }
