@@ -65,7 +65,6 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "onDestroy called")
     }
 }
-
 @Composable
 fun MainScreen(activity: Activity) {
     Column(
@@ -97,7 +96,6 @@ fun MainScreen(activity: Activity) {
         }
     }
 }
-
 @Composable
 fun RifaListScreen(onRifaClick: (Int) -> Unit) {
     val context = LocalContext.current
@@ -136,13 +134,15 @@ fun RifaListScreen(onRifaClick: (Int) -> Unit) {
     }
 }
 
+
 @Composable
 fun RifaItem(rifa: Rifa, onClick: () -> Unit) {
     val context = LocalContext.current
     val db = remember { DataBase(context, "rifasDB", null, 1) }
-    val rifas = remember { mutableStateListOf<Rifa>() }
-
     val inscritos = db.contarInscritos(rifa.matriz)
+
+    // Obtener el ganador de la base de datos
+    val ganador = db.obtenerNumeroGanadorPorId(rifa.id)
 
     Column(
         modifier = Modifier
@@ -153,6 +153,15 @@ fun RifaItem(rifa: Rifa, onClick: () -> Unit) {
         Text(text = rifa.nombre, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Text(text = "Inscritos: $inscritos")
         Text(text = "Fecha: ${rifa.fecha}")
+
+        // Verificar si el ganador no es null o vacío antes de mostrarlo
+        if (ganador != -1) {
+            Text(text = "🎉 Ganador: $ganador", fontWeight = FontWeight.Bold)
+        } else {
+            Text(text = "🎉 No hay ganador aún.", fontWeight = FontWeight.Bold)
+        }
     }
 }
+
+
 

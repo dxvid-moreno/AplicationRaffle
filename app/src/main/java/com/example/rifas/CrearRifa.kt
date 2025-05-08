@@ -119,7 +119,6 @@ fun CrearNuevaRifaScreen() {
                 val matrizJson = List(10) { List(10) { 0 } }
                     .joinToString(",") { fila -> "(" + fila.joinToString(",") + ")" }
 
-
                 val resultado = db.insertarRifa(nombre, fecha.toString(), inscritos, matrizJson)
 
                 if (resultado == -1L) {
@@ -134,8 +133,6 @@ fun CrearNuevaRifaScreen() {
                         (context as Activity).finish()
                     }
                 }
-
-
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -144,8 +141,6 @@ fun CrearNuevaRifaScreen() {
         ) {
             Text("Guardar", color = Color.White)
         }
-
-
     }
 
     if (showDatePicker) {
@@ -153,3 +148,4 @@ fun CrearNuevaRifaScreen() {
         showDatePicker = false
     }
 }
+

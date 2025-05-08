@@ -21,7 +21,8 @@ public class DataBase extends SQLiteOpenHelper {
                 "nombre TEXT NOT NULL, " +
                 "fecha TEXT NOT NULL, " +
                 "inscritos TEXT, " +
-                "matriz TEXT NOT NULL" +
+                "matriz TEXT NOT NULL, " +
+                "numeroGanador INTEGER" +
                 ")");
     }
 
@@ -61,11 +62,10 @@ public class DataBase extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("matriz", nuevaMatriz);
-        values.put("inscritos", String.valueOf(inscritos)); // Actualiza también "inscritos"
+        values.put("inscritos", String.valueOf(inscritos));
         db.update("rifas", values, "id = ?", new String[]{String.valueOf(id)});
         db.close();
     }
-
 
     public Cursor obtenerTodasLasRifas() {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -87,4 +87,38 @@ public class DataBase extends SQLiteOpenHelper {
         return contador;
     }
 
+    public void establecerNumeroGanador(int id, int numeroGanador) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("numeroGanador", numeroGanador);
+        db.update("rifas", values, "id = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    public int obtenerNumeroGanadorPorId(int id) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT numeroGanador FROM rifas WHERE id = ?", new String[]{String.valueOf(id)});
+        int numeroGanador = -1;
+        if (cursor.moveToFirst()) {
+            numeroGanador = cursor.getInt(0);
+        }
+        cursor.close();
+        db.close();
+        return numeroGanador;
+    }
+
+    // Método para obtener el nombre de la rifa por su ID
+    public String obtenerNombreRifaPorId(int rifaId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT nombre FROM rifas WHERE id = ?", new String[]{String.valueOf(rifaId)});
+
+        if (cursor != null && cursor.moveToFirst()) {
+            String nombreRifa = cursor.getString(cursor.getColumnIndex("nombre"));
+            cursor.close();
+            return nombreRifa;
+        }
+
+        cursor.close();
+        return null;  // Si no se encuentra el nombre, devuelve null
+    }
 }
