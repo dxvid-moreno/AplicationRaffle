@@ -5,6 +5,7 @@ data class Rifa(
     val nombre: String,
     val inscritos: String,
     val fecha: String,
-    val matriz: String
+    val matriz: String,
+    val ganador: Int ?= null
 )
 

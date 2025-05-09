@@ -120,7 +120,7 @@ fun CrearNuevaRifaScreen() {
                     .joinToString(",") { fila -> "(" + fila.joinToString(",") + ")" }
 
 
-                val resultado = db.insertarRifa(nombre, fecha.toString(), inscritos, matrizJson)
+                val resultado = db.insertarRifa(nombre, fecha.toString(), inscritos, matrizJson,null)
 
                 if (resultado == -1L) {
                     Toast.makeText(context, "Rifa no se guardó", Toast.LENGTH_SHORT).show()
