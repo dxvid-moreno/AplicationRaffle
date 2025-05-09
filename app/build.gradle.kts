@@ -37,7 +37,33 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
+
+// top‑level in build.gradle.kts
+java {
+    toolchain {
+        // compile & run tests with Java 11
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+
+tasks.withType<Test>().configureEach {
+    // ensure the Test task uses the Java 11 launcher
+    javaLauncher.set(
+        javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(11))
+        }
+    )
+}
+
+
+
 
 dependencies {
 
@@ -61,4 +87,11 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // JUnit4 for local unit tests
+    testImplementation("junit:junit:4.13.2")
+    // Robolectric for JVM Android environment
+    testImplementation("org.robolectric:robolectric:4.9.1")
+    // AndroidX core‑testing to get ApplicationProvider
+    testImplementation("androidx.test:core:1.4.0")
 }
