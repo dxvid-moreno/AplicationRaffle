@@ -130,6 +130,14 @@ public class DataBase extends SQLiteOpenHelper {
                 new String[]{"%" + nombreBuscado + "%"});
     }
 
+    public Cursor buscarRifasPorFecha(String fechaBuscada) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.rawQuery(
+                "SELECT id, nombre, inscritos, fecha, matriz FROM rifas WHERE fecha LIKE ?",
+                new String[]{"%" + fechaBuscada + "%"}
+        );
+    }
+
     public void eliminarRifaPorId(int id) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete("rifas", "id = ?", new String[]{String.valueOf(id)});

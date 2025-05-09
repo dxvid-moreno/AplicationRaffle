@@ -50,7 +50,6 @@ import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import androidx.compose.runtime.LaunchedEffect
 
-
 class SelectNumber : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,9 +60,7 @@ class SelectNumber : ComponentActivity() {
             RaffleScreen(rifaId = rifaId)
         }
     }
-
 }
-
 
 @Composable
 fun RaffleScreen(rifaId: Int) {
@@ -97,12 +94,12 @@ fun RaffleScreen(rifaId: Int) {
 
     LaunchedEffect(rifaId) {
         ganadorAsignado = db.obtenerGanadorPorId(rifaId)
-        if (ganadorAsignado != null) {
+        if (ganadorAsignado != null && ganadorAsignado != -1) {
             ganador = ganadorAsignado.toString()
         }
     }
 
-    val isEditable = ganadorAsignado == null
+    val isEditable = ganadorAsignado == null || ganadorAsignado == -1
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -149,7 +146,7 @@ fun RaffleScreen(rifaId: Int) {
             }
         }
 
-        if (ganadorAsignado == null) {
+        if (isEditable) {
             OutlinedTextField(
                 value = ganador,
                 onValueChange = {
@@ -178,12 +175,18 @@ fun RaffleScreen(rifaId: Int) {
                     if (ganador.isNotBlank()) {
                         val numeroGanador = ganador.toIntOrNull()
                         if (numeroGanador != null && numeroGanador in 0..99) {
-                            val exito = db.guardarGanador(rifaId, numeroGanador)
-                            if (exito) {
-                                ganadorAsignado = numeroGanador
-                                Toast.makeText(context, "Ganador guardado correctamente", Toast.LENGTH_SHORT).show()
+                            val row = numeroGanador / 10
+                            val col = numeroGanador % 10
+                            if (selectedNumbers[row][col] == 1) {
+                                val exito = db.guardarGanador(rifaId, numeroGanador)
+                                if (exito) {
+                                    ganadorAsignado = numeroGanador
+                                    Toast.makeText(context, "Ganador guardado correctamente", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "No se pudo guardar el ganador", Toast.LENGTH_SHORT).show()
+                                }
                             } else {
-                                Toast.makeText(context, "No se pudo guardar el ganador", Toast.LENGTH_SHORT).show()
+                                ganadorError = "El número $numeroGanador no ha sido seleccionado en la matriz."
                             }
                         } else {
                             ganadorError = "El número debe estar entre 0 y 99."
@@ -196,6 +199,7 @@ fun RaffleScreen(rifaId: Int) {
             ) {
                 Text("Guardar ganador", color = Color.White)
             }
+
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -258,5 +262,3 @@ fun RaffleScreen(rifaId: Int) {
         }
     }
 }
-
-

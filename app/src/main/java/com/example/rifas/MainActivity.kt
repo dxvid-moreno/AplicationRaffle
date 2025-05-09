@@ -76,6 +76,7 @@ fun MainScreen(activity: Activity) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+        Spacer(modifier = Modifier.height(48.dp))
         Text(text = "Rifas", fontSize = 24.sp, modifier = Modifier.padding(top = 34.dp))
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -104,13 +105,14 @@ fun RifaListScreen(onRifaClick: (Int) -> Unit) {
     val context = LocalContext.current
     val db = remember { DataBase(context, "rifasDB", null, 1) }
     val rifas = remember { mutableStateListOf<Rifa>() }
-    var textoBusqueda by remember { mutableStateOf("") }
+    var textoBusquedaNombre by remember { mutableStateOf("") }
+    var textoBusquedaFecha by remember { mutableStateOf("") }
 
     fun buscar() {
-        val cursor = if (textoBusqueda.isEmpty()) {
-            db.obtenerTodasLasRifas()
-        } else {
-            db.buscarRifasPorNombre(textoBusqueda)
+        val cursor = when {
+            textoBusquedaNombre.isNotEmpty() -> db.buscarRifasPorNombre(textoBusquedaNombre)
+            textoBusquedaFecha.isNotEmpty() -> db.buscarRifasPorFecha(textoBusquedaFecha)
+            else -> db.obtenerTodasLasRifas()
         }
 
         val lista = mutableListOf<Rifa>()
@@ -134,18 +136,33 @@ fun RifaListScreen(onRifaClick: (Int) -> Unit) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Lista de Rifas", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+
         TextField(
-            value = textoBusqueda,
+            value = textoBusquedaNombre,
             onValueChange = {
-                textoBusqueda = it
+                textoBusquedaNombre = it
+                textoBusquedaFecha = ""
                 buscar()
             },
             label = { Text("Buscar rifa por nombre") },
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Lista de Rifas", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+
+
+        TextField(
+            value = textoBusquedaFecha,
+            onValueChange = {
+                textoBusquedaFecha = it
+                textoBusquedaNombre = ""
+                buscar()
+            },
+            label = { Text("Buscar por fecha (ej. 2025-05-08)") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         if (rifas.isEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
