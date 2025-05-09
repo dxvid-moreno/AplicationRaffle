@@ -75,8 +75,8 @@ fun MainScreen(activity: Activity) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+        Spacer(modifier = Modifier.height(48.dp))
         Text(text = "Rifas", fontSize = 24.sp)
-
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
@@ -97,19 +97,19 @@ fun MainScreen(activity: Activity) {
         }
     }
 }
-
 @Composable
 fun RifaListScreen(onRifaClick: (Int) -> Unit) {
     val context = LocalContext.current
     val db = remember { DataBase(context, "rifasDB", null, 1) }
     val rifas = remember { mutableStateListOf<Rifa>() }
-    var textoBusqueda by remember { mutableStateOf("") }
+    var textoBusquedaNombre by remember { mutableStateOf("") }
+    var textoBusquedaFecha by remember { mutableStateOf("") }
 
     fun buscar() {
-        val cursor = if (textoBusqueda.isEmpty()) {
-            db.obtenerTodasLasRifas()
-        } else {
-            db.buscarRifasPorNombre(textoBusqueda)
+        val cursor = when {
+            textoBusquedaNombre.isNotEmpty() -> db.buscarRifasPorNombre(textoBusquedaNombre)
+            textoBusquedaFecha.isNotEmpty() -> db.buscarRifasPorFecha(textoBusquedaFecha)
+            else -> db.obtenerTodasLasRifas()
         }
 
         val lista = mutableListOf<Rifa>()
@@ -132,12 +132,26 @@ fun RifaListScreen(onRifaClick: (Int) -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         TextField(
-            value = textoBusqueda,
+            value = textoBusquedaNombre,
             onValueChange = {
-                textoBusqueda = it
+                textoBusquedaNombre = it
+                textoBusquedaFecha = "" // Limpiar búsqueda por fecha
                 buscar()
             },
-            label = { Text("Buscar rifa por nombre") },
+            label = { Text("Buscar por nombre") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextField(
+            value = textoBusquedaFecha,
+            onValueChange = {
+                textoBusquedaFecha = it
+                textoBusquedaNombre = "" // Limpiar búsqueda por nombre
+                buscar()
+            },
+            label = { Text("Buscar por fecha (ej. 2025-05-08)") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -156,6 +170,7 @@ fun RifaListScreen(onRifaClick: (Int) -> Unit) {
         }
     }
 }
+
 
 
 

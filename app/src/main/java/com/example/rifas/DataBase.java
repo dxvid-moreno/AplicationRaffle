@@ -134,6 +134,16 @@ public class DataBase extends SQLiteOpenHelper {
         db.close();
     }
 
+    public Cursor buscarRifasPorFecha(String fechaBuscada) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.rawQuery(
+                "SELECT id, nombre, inscritos, fecha, matriz FROM rifas WHERE fecha LIKE ?",
+                new String[]{"%" + fechaBuscada + "%"}
+        );
+    }
+
+
+
 
 
 }

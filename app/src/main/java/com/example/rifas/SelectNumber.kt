@@ -97,7 +97,8 @@ fun RaffleScreen(rifaId: Int) {
     // Obtener el nombre de la rifa
     val nombreRifa = remember { db.obtenerNombreRifaPorId(rifaId) ?: "Rifa desconocida" }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+        Spacer(modifier = Modifier.height(16.dp))
         Text("$nombreRifa", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
         LazyVerticalGrid(
