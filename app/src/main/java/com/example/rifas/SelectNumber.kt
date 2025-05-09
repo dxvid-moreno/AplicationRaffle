@@ -48,7 +48,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
-
+import androidx.compose.runtime.LaunchedEffect
 
 class SelectNumber : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,18 +60,14 @@ class SelectNumber : ComponentActivity() {
             RaffleScreen(rifaId = rifaId)
         }
     }
-
 }
-
 
 @Composable
 fun RaffleScreen(rifaId: Int) {
     val context = LocalContext.current
     val db = remember { DataBase(context, "rifasDB", null, 1) }
 
-    val matrizJson = remember {
-        db.obtenerMatrizPorId(rifaId)
-    }
+    val matrizJson = remember { db.obtenerMatrizPorId(rifaId) }
 
     val matrizInicial = remember {
         if (matrizJson.isNullOrBlank() || matrizJson == "[]") {
@@ -88,18 +84,36 @@ fun RaffleScreen(rifaId: Int) {
         }
     }
 
-
     var selectedNumbers by remember { mutableStateOf(matrizInicial) }
 
     var ganador by remember { mutableStateOf("") }
-    var checked by remember { mutableStateOf(false) }
+    var ganadorAsignado by remember { mutableStateOf<Int?>(null) }
+    var ganadorError by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Rifas $rifaId", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    val nombreRifa = remember { db.obtenerNombreRifaPorId(rifaId) ?: "Rifa desconocida" }
+
+    LaunchedEffect(rifaId) {
+        ganadorAsignado = db.obtenerGanadorPorId(rifaId)
+        if (ganadorAsignado != null && ganadorAsignado != -1) {
+            ganador = ganadorAsignado.toString()
+        }
+    }
+
+    val isEditable = ganadorAsignado == null || ganadorAsignado == -1
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)
+        .padding(top = 40.dp)
+    ) {
+
+        Text("$nombreRifa", fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 16.dp))
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(10),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             items(100) { index ->
@@ -114,7 +128,7 @@ fun RaffleScreen(rifaId: Int) {
                         .size(32.dp)
                         .clip(CircleShape)
                         .background(if (isSelected) Color(0xFFE91E63) else Color.LightGray)
-                        .clickable {
+                        .clickable(enabled = isEditable) {
                             selectedNumbers = selectedNumbers.toMutableList().apply {
                                 val updatedRow = this[row].toMutableList().apply {
                                     this[col] = if (this[col] == 1) 0 else 1
@@ -132,64 +146,119 @@ fun RaffleScreen(rifaId: Int) {
             }
         }
 
-        OutlinedTextField(
-            value = ganador,
-            onValueChange = { ganador = it },
-            label = { Text("Boleto ganador") },
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-        )
+        if (isEditable) {
+            OutlinedTextField(
+                value = ganador,
+                onValueChange = {
+                    ganador = it
+                    ganadorError = ""
+                },
+                label = { Text("Asignar Boleto Ganador") },
+                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                isError = ganadorError.isNotEmpty()
+            )
 
-        Row(modifier = Modifier.padding(vertical = 8.dp)) {
-            Text("Inhabilitar")
-            Spacer(modifier = Modifier.width(8.dp))
-            Switch(checked = checked, onCheckedChange = { checked = it })
+            if (ganadorError.isNotEmpty()) {
+                Text(
+                    text = ganadorError,
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Button(
+                onClick = {
+                    if (ganador.isNotBlank()) {
+                        val numeroGanador = ganador.toIntOrNull()
+                        if (numeroGanador != null && numeroGanador in 0..99) {
+                            val row = numeroGanador / 10
+                            val col = numeroGanador % 10
+                            if (selectedNumbers[row][col] == 1) {
+                                val exito = db.guardarGanador(rifaId, numeroGanador)
+                                if (exito) {
+                                    ganadorAsignado = numeroGanador
+                                    Toast.makeText(context, "Ganador guardado correctamente", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "No se pudo guardar el ganador", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                ganadorError = "El número $numeroGanador no ha sido seleccionado en la matriz."
+                            }
+                        } else {
+                            ganadorError = "El número debe estar entre 0 y 99."
+                        }
+                    } else {
+                        ganadorError = "Ingresa un número ganador válido."
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+            ) {
+                Text("Guardar ganador", color = Color.White)
+            }
+
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+            ) {
+                Button(
+                    onClick = {
+                        val nuevaMatriz = selectedNumbers.joinToString(",") {
+                            "(" + it.joinToString(",") + ")"
+                        }
+                        db.actualizarMatriz(rifaId, nuevaMatriz)
+                        Toast.makeText(context, "Matriz guardada correctamente", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
+                ) {
+                    Text("Guardar", color = Color.White)
+                }
+
+                Button(
+                    onClick = {
+                        selectedNumbers = List(10) { List(10) { 0 } }
+                        val matrizVacia = selectedNumbers.joinToString(",") {
+                            "(" + it.joinToString(",") + ")"
+                        }
+                        db.actualizarMatriz(rifaId, matrizVacia)
+                        Toast.makeText(context, "Matriz limpiada", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
+                ) {
+                    Text("Limpiar", color = Color.White)
+                }
+            }
+        } else {
+            Text(
+                "ESTA RIFA YA TIENE GANADOR",
+                fontSize = 20.sp,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 24.dp)
+            )
         }
 
         Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
         ) {
-            Button(
-                onClick = {
-                    val nuevaMatriz = selectedNumbers.joinToString(",") {
-                        "(" + it.joinToString(",") + ")"
-                    }
-                    db.actualizarMatriz(rifaId, nuevaMatriz)
-                    Toast.makeText(context, "Matriz guardada correctamente", Toast.LENGTH_SHORT).show()
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
-            ) {
-                Text("Guardar", color = Color.White)
-            }
-
-            Button(
-                onClick = {
-                    selectedNumbers = List(10) { List(10) { 0 } }
-                    val matrizVacia = selectedNumbers.joinToString(",") {
-                        "(" + it.joinToString(",") + ")"
-                    }
-                    db.actualizarMatriz(rifaId, matrizVacia)
-                    Toast.makeText(context, "Matriz limpiada", Toast.LENGTH_SHORT).show()
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
-            ) {
-                Text("Eliminar", color = Color.White)
-            }
-
             Button(
                 onClick = {
                     val intent = Intent(context, MainActivity::class.java)
                     context.startActivity(intent)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
             ) {
                 Text("Volver al inicio", color = Color.White)
             }
-
         }
-
-
     }
 }
-
