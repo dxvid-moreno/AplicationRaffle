@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MainScreen(this)
+            MainRaffleScreen(this)
         }
     }
 
@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable
-fun MainScreen(activity: Activity) {
+fun MainRaffleScreen(activity: Activity) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -76,110 +76,106 @@ fun MainScreen(activity: Activity) {
         verticalArrangement = Arrangement.Top
     ) {
         Spacer(modifier = Modifier.height(48.dp))
-        Text(text = "Rifas", fontSize = 24.sp)
+        Text(text = "Raffles", fontSize = 24.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
-                val intent = Intent(activity, CrearRifa::class.java)
+                val intent = Intent(activity, CreateRaffleScreen::class.java)
                 activity.startActivity(intent)
             }
         ) {
-            Text("Nuevo")
+            Text("New")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        RifaListScreen { rifaId ->
-            val intent = Intent(activity, SelectNumber::class.java)
-            intent.putExtra("rifaId", rifaId)
+        RaffleListScreen { raffleId ->
+            val intent = Intent(activity, SelectNumberScreen::class.java)
+            intent.putExtra("raffleId", raffleId)
             activity.startActivity(intent)
         }
     }
 }
 @Composable
-fun RifaListScreen(onRifaClick: (Int) -> Unit) {
+fun RaffleListScreen(onRaffleClick: (Int) -> Unit) {
     val context = LocalContext.current
-    val db = remember { DataBase(context, "rifasDB", null, 1) }
-    val rifas = remember { mutableStateListOf<Rifa>() }
-    var textoBusquedaNombre by remember { mutableStateOf("") }
-    var textoBusquedaFecha by remember { mutableStateOf("") }
+    val db = remember { DataBase(context, "rafflesDB", null, 1) }
+    val raffles = remember { mutableStateListOf<Rifa>() }
+    var searchNameText by remember { mutableStateOf("") }
+    var searchDateText by remember { mutableStateOf("") }
 
-    fun buscar() {
+    fun searchRaffles() {
         val cursor = when {
-            textoBusquedaNombre.isNotEmpty() -> db.buscarRifasPorNombre(textoBusquedaNombre)
-            textoBusquedaFecha.isNotEmpty() -> db.buscarRifasPorFecha(textoBusquedaFecha)
-            else -> db.obtenerTodasLasRifas()
+            searchNameText.isNotEmpty() -> db.searchRafflesByName(searchNameText)
+            searchDateText.isNotEmpty() -> db.searchRafflesByDate(searchDateText)
+            else -> db.getAllRaffles()
         }
 
-        val lista = mutableListOf<Rifa>()
+        val raffleList = mutableListOf<Rifa>()
         while (cursor.moveToNext()) {
             val id = cursor.getInt(0)
-            val nombre = cursor.getString(1)
-            val inscritos = cursor.getString(2)
-            val fecha = cursor.getString(3)
-            val matriz = cursor.getString(4)
-            lista.add(Rifa(id, nombre, inscritos, fecha, matriz))
+            val name = cursor.getString(1)
+            val enrolled = cursor.getString(2)
+            val date = cursor.getString(3)
+            val matrix = cursor.getString(4)
+            raffleList.add(Rifa(id, name, enrolled, date, matrix))
         }
         cursor.close()
-        rifas.clear()
-        rifas.addAll(lista)
+        raffles.clear()
+        raffles.addAll(raffleList)
     }
 
     LaunchedEffect(Unit) {
-        buscar()
+        searchRaffles()
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         TextField(
-            value = textoBusquedaNombre,
+            value = searchNameText,
             onValueChange = {
-                textoBusquedaNombre = it
-                textoBusquedaFecha = "" // Limpiar búsqueda por fecha
-                buscar()
+                searchNameText = it
+                searchDateText = "" // Clear date search
+                searchRaffles()
             },
-            label = { Text("Buscar por nombre") },
+            label = { Text("Search by name") },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         TextField(
-            value = textoBusquedaFecha,
+            value = searchDateText,
             onValueChange = {
-                textoBusquedaFecha = it
-                textoBusquedaNombre = "" // Limpiar búsqueda por nombre
-                buscar()
+                searchDateText = it
+                searchNameText = "" // Clear name search
+                searchRaffles()
             },
-            label = { Text("Buscar por fecha (ej. 2025-05-08)") },
+            label = { Text("Search by date (e.g., 2025-05-08)") },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Lista de Rifas", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text("Raffle List", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
-        if (rifas.isEmpty()) {
+        if (raffles.isEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
-            Text("No hay rifas disponibles")
+            Text("No raffles available")
         } else {
             LazyColumn {
-                items(rifas) { rifa ->
-                    RifaItem(rifa = rifa, onClick = { onRifaClick(rifa.id) })
+                items(raffles) { raffle ->
+                    RaffleItem(raffle = raffle, onClick = { onRaffleClick(raffle.id) })
                 }
             }
         }
     }
 }
-
-
-
-
 @Composable
-fun RifaItem(rifa: Rifa, onClick: () -> Unit) {
+fun RaffleItem(raffle: Rifa, onClick: () -> Unit) {
     val context = LocalContext.current
-    val db = remember { DataBase(context, "rifasDB", null, 1) }
-    val inscritos = db.contarInscritos(rifa.matriz)
-    val ganador = db.obtenerNumeroGanadorPorId(rifa.id)
+    val db = remember { DataBase(context, "rafflesDB", null, 1) }
+    val enrolledCount = db.countEnrolled(raffle.matriz)
+    val winningNumber = db.getWinningNumberById(raffle.id)
     val activity = (context as? Activity)
 
     Column(
@@ -188,26 +184,22 @@ fun RifaItem(rifa: Rifa, onClick: () -> Unit) {
             .clickable { onClick() }
             .padding(12.dp)
     ) {
-        Text(text = rifa.nombre, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text(text = "Inscritos: $inscritos")
-        Text(text = "Fecha: ${rifa.fecha}")
-        if (ganador != -1) {
-            Text(text = "🎉 Ganador: $ganador", fontWeight = FontWeight.Bold)
-        }else{
+        Text(text = raffle.nombre, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(text = "Inscritos: $enrolledCount")
+        Text(text = "Fecha: ${raffle.fecha}")
+        if (winningNumber != -1) {
+            Text(text = "🎉 Ganador: $winningNumber", fontWeight = FontWeight.Bold)
+        } else {
             Text(text = "No hay ganador", fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Button(onClick = {
-            db.eliminarRifaPorId(rifa.id)
-            activity?.recreate()  // Para recargar la lista
+            db.deleteRaffleById(raffle.id)
+            activity?.recreate()  // To reload the list
         }) {
             Text("Eliminar")
         }
     }
 }
-
-
-
-

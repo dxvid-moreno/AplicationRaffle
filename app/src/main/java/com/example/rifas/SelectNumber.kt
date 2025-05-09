@@ -50,34 +50,33 @@ import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 
 
-class SelectNumber : ComponentActivity() {
+class SelectNumberScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val rifaId = intent.getIntExtra("rifaId", -1)
+        val raffleId = intent.getIntExtra("raffleId", -1)
 
         setContent {
-            RaffleScreen(rifaId = rifaId)
+            RaffleGridScreen(raffleId = raffleId)
         }
     }
-
 }
 
 
 @Composable
-fun RaffleScreen(rifaId: Int) {
+fun RaffleGridScreen(raffleId: Int) {
     val context = LocalContext.current
-    val db = remember { DataBase(context, "rifasDB", null, 1) }
+    val db = remember { DataBase(context, "rafflesDB", null, 1) }
 
-    val matrizJson = remember {
-        db.obtenerMatrizPorId(rifaId)
+    val matrixJson = remember {
+        db.getMatrixById(raffleId)
     }
 
-    val matrizInicial = remember {
-        if (matrizJson.isNullOrBlank() || matrizJson == "[]") {
+    val initialMatrix = remember {
+        if (matrixJson.isNullOrBlank() || matrixJson == "[]") {
             List(10) { List(10) { 0 } }
         } else {
-            matrizJson
+            matrixJson
                 .split("),(")
                 .map {
                     it.replace("(", "")
@@ -89,17 +88,17 @@ fun RaffleScreen(rifaId: Int) {
     }
 
 
-    var selectedNumbers by remember { mutableStateOf(matrizInicial) }
+    var selectedNumbers by remember { mutableStateOf(initialMatrix) }
 
-    var ganador by remember { mutableStateOf("") }
-    var checked by remember { mutableStateOf(false) }
+    var winningTicket by remember { mutableStateOf("") }
+    var disableToggle by remember { mutableStateOf(false) }
 
-    // Obtener el nombre de la rifa
-    val nombreRifa = remember { db.obtenerNombreRifaPorId(rifaId) ?: "Rifa desconocida" }
+    // Get the raffle name
+    val raffleName = remember { db.getRaffleNameById(raffleId) ?: "Unknown Raffle" }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
         Spacer(modifier = Modifier.height(16.dp))
-        Text("$nombreRifa", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text("$raffleName", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(10),
@@ -137,17 +136,17 @@ fun RaffleScreen(rifaId: Int) {
         }
 
         OutlinedTextField(
-            value = ganador,
-            onValueChange = { ganador = it },
-            label = { Text("Boleto ganador") },
+            value = winningTicket,
+            onValueChange = { winningTicket = it },
+            label = { Text("Winning ticket") },
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
         )
 
         Row(modifier = Modifier.padding(vertical = 8.dp)) {
-            Text("Inhabilitar")
+            Text("Disable")
             Spacer(modifier = Modifier.width(8.dp))
-            Switch(checked = checked, onCheckedChange = { checked = it })
+            Switch(checked = disableToggle, onCheckedChange = { disableToggle = it })
         }
 
         Row(
@@ -156,29 +155,29 @@ fun RaffleScreen(rifaId: Int) {
         ) {
             Button(
                 onClick = {
-                    val nuevaMatriz = selectedNumbers.joinToString(",") {
+                    val newMatrix = selectedNumbers.joinToString(",") {
                         "(" + it.joinToString(",") + ")"
                     }
-                    db.actualizarMatriz(rifaId, nuevaMatriz)
-                    Toast.makeText(context, "Matriz guardada correctamente", Toast.LENGTH_SHORT).show()
+                    db.updateMatrix(raffleId, newMatrix)
+                    Toast.makeText(context, "Matrix saved successfully", Toast.LENGTH_SHORT).show()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
             ) {
-                Text("Guardar", color = Color.White)
+                Text("Save", color = Color.White)
             }
 
             Button(
                 onClick = {
                     selectedNumbers = List(10) { List(10) { 0 } }
-                    val matrizVacia = selectedNumbers.joinToString(",") {
+                    val emptyMatrix = selectedNumbers.joinToString(",") {
                         "(" + it.joinToString(",") + ")"
                     }
-                    db.actualizarMatriz(rifaId, matrizVacia)
-                    Toast.makeText(context, "Matriz limpiada", Toast.LENGTH_SHORT).show()
+                    db.updateMatrix(raffleId, emptyMatrix)
+                    Toast.makeText(context, "Matrix cleared", Toast.LENGTH_SHORT).show()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
             ) {
-                Text("Eliminar", color = Color.White)
+                Text("Clear", color = Color.White)
             }
 
             Button(
@@ -188,12 +187,8 @@ fun RaffleScreen(rifaId: Int) {
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
             ) {
-                Text("Volver al inicio", color = Color.White)
+                Text("Back to Home", color = Color.White)
             }
-
         }
-
-
     }
 }
-

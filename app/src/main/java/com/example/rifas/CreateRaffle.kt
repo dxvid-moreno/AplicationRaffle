@@ -56,12 +56,12 @@ import android.content.Intent
 
 
 
-class CrearRifa : ComponentActivity() {
+class CreateRaffleScreen : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            CrearNuevaRifaScreen()
+            CreateNewRaffleScreen()
         }
 
     }
@@ -69,20 +69,20 @@ class CrearRifa : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CrearNuevaRifaScreen() {
-    var nombre by remember { mutableStateOf("") }
-    var fecha by remember { mutableStateOf(LocalDate.now()) }
+fun CreateNewRaffleScreen() {
+    var name by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(LocalDate.now()) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
-            fecha = LocalDate.of(year, month + 1, dayOfMonth)
+            date = LocalDate.of(year, month + 1, dayOfMonth)
         },
-        fecha.year,
-        fecha.monthValue - 1,
-        fecha.dayOfMonth
+        date.year,
+        date.monthValue - 1,
+        date.dayOfMonth
     )
 
     Column(
@@ -91,40 +91,40 @@ fun CrearNuevaRifaScreen() {
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Crear nueva Rifa", style = MaterialTheme.typography.headlineSmall)
+        Text("Create new Raffle", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
-            value = nombre,
-            onValueChange = { nombre = it },
-            label = { Text("Nombre") },
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Fecha de rifa", style = MaterialTheme.typography.bodyMedium)
+        Text("Raffle date", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = { showDatePicker = true }) {
-            Text(text = fecha.toString())
+            Text(text = date.toString())
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = {
-                val db = DataBase(context, "rifasDB", null, 1)
+                val db = DataBase(context, "rafflesDB", null, 1)
 
-                val inscritos = "0"
-                val matrizJson = List(10) { List(10) { 0 } }
-                    .joinToString(",") { fila -> "(" + fila.joinToString(",") + ")" }
+                val enrolled = "0"
+                val matrixJson = List(10) { List(10) { 0 } }
+                    .joinToString(",") { row -> "(" + row.joinToString(",") + ")" }
 
-                val resultado = db.insertarRifa(nombre, fecha.toString(), inscritos, matrizJson)
+                val result = db.insertRaffle(name, date.toString(), enrolled, matrixJson)
 
-                if (resultado == -1L) {
-                    Toast.makeText(context, "Rifa no se guardó", Toast.LENGTH_SHORT).show()
+                if (result == -1L) {
+                    Toast.makeText(context, "Raffle not saved", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, "Rifa guardada exitosamente", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Raffle saved successfully", Toast.LENGTH_SHORT).show()
 
                     val intent = Intent(context, MainActivity::class.java)
                     context.startActivity(intent)
@@ -139,7 +139,7 @@ fun CrearNuevaRifaScreen() {
                 .height(50.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5E5E))
         ) {
-            Text("Guardar", color = Color.White)
+            Text("Save", color = Color.White)
         }
     }
 
@@ -148,4 +148,3 @@ fun CrearNuevaRifaScreen() {
         showDatePicker = false
     }
 }
-

@@ -16,134 +16,129 @@ public class DataBase extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE rifas (" +
+        db.execSQL("CREATE TABLE raffles (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "nombre TEXT NOT NULL, " +
-                "fecha TEXT NOT NULL, " +
-                "inscritos TEXT, " +
-                "matriz TEXT NOT NULL, " +
-                "numeroGanador INTEGER" +
+                "name TEXT NOT NULL, " +
+                "date TEXT NOT NULL, " +
+                "enrolled TEXT, " +
+                "matrix TEXT NOT NULL, " +
+                "winningNumber INTEGER" +
                 ")");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS rifas");
+        db.execSQL("DROP TABLE IF EXISTS raffles");
         onCreate(db);
     }
 
-    public long insertarRifa(String nombre, String fecha, String inscritos, String matrizJson) {
+    public long insertRaffle(String name, String date, String enrolled, String matrixJson) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put("nombre", nombre);
-        values.put("fecha", fecha);
-        values.put("inscritos", inscritos);
-        values.put("matriz", matrizJson);
-        long result = db.insert("rifas", null, values);
+        values.put("name", name);
+        values.put("date", date);
+        values.put("enrolled", enrolled);
+        values.put("matrix", matrixJson);
+        long result = db.insert("raffles", null, values);
         db.close();
         return result;
     }
 
-    public String obtenerMatrizPorId(int id) {
+    public String getMatrixById(int id) {
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT matriz FROM rifas WHERE id = ?", new String[]{String.valueOf(id)});
-        String matriz = "";
+        Cursor cursor = db.rawQuery("SELECT matrix FROM raffles WHERE id = ?", new String[]{String.valueOf(id)});
+        String matrix = "";
         if (cursor.moveToFirst()) {
-            matriz = cursor.getString(0);
+            matrix = cursor.getString(0);
         }
         cursor.close();
         db.close();
-        return matriz;
+        return matrix;
     }
 
-    public void actualizarMatriz(int id, String nuevaMatriz) {
-        int inscritos = contarInscritos(nuevaMatriz);
+    public void updateMatrix(int id, String newMatrix) {
+        int enrolledCount = countEnrolled(newMatrix);
 
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put("matriz", nuevaMatriz);
-        values.put("inscritos", String.valueOf(inscritos));
-        db.update("rifas", values, "id = ?", new String[]{String.valueOf(id)});
+        values.put("matrix", newMatrix);
+        values.put("enrolled", String.valueOf(enrolledCount));
+        db.update("raffles", values, "id = ?", new String[]{String.valueOf(id)});
         db.close();
     }
 
-    public Cursor obtenerTodasLasRifas() {
+    public Cursor getAllRaffles() {
         SQLiteDatabase db = this.getReadableDatabase();
-        return db.rawQuery("SELECT id, nombre, inscritos, fecha, matriz FROM rifas", null);
+        return db.rawQuery("SELECT id, name, enrolled, date, matrix FROM raffles", null);
     }
 
-    public int contarInscritos(String matriz) {
-        if (matriz == null || matriz.isEmpty() || matriz.equals("[]")) return 0;
+    public int countEnrolled(String matrix) {
+        if (matrix == null || matrix.isEmpty() || matrix.equals("[]")) return 0;
 
-        String limpia = matriz.replace("(", "").replace(")", "");
-        String[] numeros = limpia.split(",");
+        String cleaned = matrix.replace("(", "").replace(")", "");
+        String[] numbers = cleaned.split(",");
 
-        int contador = 0;
-        for (String numero : numeros) {
-            if (numero.trim().equals("1")) {
-                contador++;
+        int count = 0;
+        for (String number : numbers) {
+            if (number.trim().equals("1")) {
+                count++;
             }
         }
-        return contador;
+        return count;
     }
 
-    public void establecerNumeroGanador(int id, int numeroGanador) {
+    public void setWinningNumber(int id, int winningNumber) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put("numeroGanador", numeroGanador);
-        db.update("rifas", values, "id = ?", new String[]{String.valueOf(id)});
+        values.put("winningNumber", winningNumber);
+        db.update("raffles", values, "id = ?", new String[]{String.valueOf(id)});
         db.close();
     }
 
-    public int obtenerNumeroGanadorPorId(int id) {
+    public int getWinningNumberById(int id) {
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT numeroGanador FROM rifas WHERE id = ?", new String[]{String.valueOf(id)});
-        int numeroGanador = -1;
+        Cursor cursor = db.rawQuery("SELECT winningNumber FROM raffles WHERE id = ?", new String[]{String.valueOf(id)});
+        int winningNumber = -1;
         if (cursor.moveToFirst()) {
-            numeroGanador = cursor.getInt(0);
+            winningNumber = cursor.getInt(0);
         }
         cursor.close();
         db.close();
-        return numeroGanador;
+        return winningNumber;
     }
 
-    // Método para obtener el nombre de la rifa por su ID
-    public String obtenerNombreRifaPorId(int rifaId) {
+    /** Method to get the raffle's name by its ID */
+    public String getRaffleNameById(int raffleId) {
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT nombre FROM rifas WHERE id = ?", new String[]{String.valueOf(rifaId)});
+        Cursor cursor = db.rawQuery("SELECT name FROM raffles WHERE id = ?", new String[]{String.valueOf(raffleId)});
 
         if (cursor != null && cursor.moveToFirst()) {
-            String nombreRifa = cursor.getString(cursor.getColumnIndex("nombre"));
+            String raffleName = cursor.getString(cursor.getColumnIndex("name"));
             cursor.close();
-            return nombreRifa;
+            return raffleName;
         }
 
         cursor.close();
-        return null;  // Si no se encuentra el nombre, devuelve null
+        return null;  // If the name is not found, returns null
     }
 
-    public Cursor buscarRifasPorNombre(String nombreBuscado) {
+    public Cursor searchRafflesByName(String searchedName) {
         SQLiteDatabase db = this.getReadableDatabase();
-        return db.rawQuery("SELECT id, nombre, inscritos, fecha, matriz FROM rifas WHERE nombre LIKE ?",
-                new String[]{"%" + nombreBuscado + "%"});
+        return db.rawQuery("SELECT id, name, enrolled, date, matrix FROM raffles WHERE name LIKE ?",
+                new String[]{"%" + searchedName + "%"});
     }
 
-    public void eliminarRifaPorId(int id) {
+    public void deleteRaffleById(int id) {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete("rifas", "id = ?", new String[]{String.valueOf(id)});
+        db.delete("raffles", "id = ?", new String[]{String.valueOf(id)});
         db.close();
     }
 
-    public Cursor buscarRifasPorFecha(String fechaBuscada) {
+    public Cursor searchRafflesByDate(String searchedDate) {
         SQLiteDatabase db = this.getReadableDatabase();
         return db.rawQuery(
-                "SELECT id, nombre, inscritos, fecha, matriz FROM rifas WHERE fecha LIKE ?",
-                new String[]{"%" + fechaBuscada + "%"}
+                "SELECT id, name, enrolled, date, matrix FROM raffles WHERE date LIKE ?",
+                new String[]{"%" + searchedDate + "%"}
         );
     }
-
-
-
-
-
 }

@@ -13,10 +13,10 @@
         android:theme="@style/Theme.Rifas"
         tools:targetApi="31">
         <activity
-            android:name=".CrearRifa"
+            android:name=".CreateRaffleScreen"
             android:exported="true" />
         <activity
-            android:name=".SelectNumber"
+            android:name=".SelectNumberScreen"
             android:exported="true" />
         <activity
             android:name=".MainActivity"
