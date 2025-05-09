@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
             MainScreen(this)
         }
     }
-
+    //life loop
     override fun onStart() {
         super.onStart()
         Log.d(TAG, "onStart called")
